@@ -1,0 +1,11 @@
+[build]
+  publish = "public"
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+
+# Note: standard Netlify Functions time out at 10s on the free tier (26s on
+# paid plans). get-news.js calls Gemini once per surviving item, in parallel,
+# but 15-20 parallel calls can still be tight on the free tier. If you hit
+# timeouts, lower the .slice(0, 20) cap in get-news.js, e.g. to 10.

@@ -1,0 +1,9 @@
+{
+  "name": "company-intel-monitor",
+  "version": "1.0.0",
+  "private": true,
+  "description": "RSS-based industry intel monitor with sales/marketing/support relevance filters",
+  "dependencies": {
+    "rss-parser": "^3.13.0"
+  }
+}

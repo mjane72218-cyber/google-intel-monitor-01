@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Signal — Google Intel Monitor</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root{
+    --bg: #0A0A0D;
+    --bg-glow-1: rgba(66,133,244,0.16);
+    --bg-glow-2: rgba(234,67,53,0.10);
+    --panel: rgba(255,255,255,0.035);
+    --line: rgba(255,255,255,0.09);
+    --text: #F2F1ED;
+    --muted: #8D8F97;
+    --blue: #4285F4;
+    --red: #EA4335;
+    --yellow: #FBBC05;
+    --green: #34A853;
+    --gradient: linear-gradient(90deg, var(--blue), var(--red), var(--yellow), var(--green));
+    --sales: #4285F4;
+    --marketing: #EA4335;
+    --support: #34A853;
+    --radius: 14px;
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:
+      radial-gradient(ellipse 900px 500px at 12% -10%, var(--bg-glow-1), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 10%, var(--bg-glow-2), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    color:var(--text);
+    font-family:'Inter', sans-serif;
+    min-height:100vh;
+  }
+
+  a{ color:var(--blue); text-decoration:none; }
+  a:hover{ text-decoration:underline; }
+  ::selection{ background:rgba(66,133,244,0.35); color:#fff; }
+
+  .brand-strip{
+    height:3px;
+    background:var(--gradient);
+    background-size:300% 100%;
+    animation:shift 6s ease-in-out infinite;
+  }
+  @keyframes shift{
+    0%{ background-position:0% 50%; }
+    50%{ background-position:100% 50%; }
+    100%{ background-position:0% 50%; }
+  }
+
+  .ticker-wrap{
+    background:rgba(255,255,255,0.02);
+    backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--line);
+    padding:10px 20px;
+    font-size:12px;
+    color:var(--muted);
+    overflow:hidden;
+  }
+  .ticker-wrap .status-inner{
+    max-width:920px;
+    margin:0 auto;
+    display:flex;
+    align-items:center;
+    gap:9px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .ticker-wrap .status-dot{
+    width:7px; height:7px;
+    background:var(--green);
+    border-radius:50%;
+    display:inline-block;
+    flex:0 0 auto;
+    box-shadow:0 0 0 0 rgba(52,168,83,0.55);
+    animation:pulse 2.2s ease-out infinite;
+  }
+  @keyframes pulse{
+    0%{ box-shadow:0 0 0 0 rgba(52,168,83,0.55); }
+    70%{ box-shadow:0 0 0 8px rgba(52,168,83,0); }
+    100%{ box-shadow:0 0 0 0 rgba(52,168,83,0); }
+  }
+
+  header{
+    max-width:920px;
+    margin:0 auto;
+    padding:44px 20px 22px;
+    position:relative;
+  }
+  .eyebrow{
+    font-size:11px;
+    font-weight:600;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--muted);
+  }
+  h1{
+    font-family:'Playfair Display', serif;
+    font-weight:700;
+    font-size:40px;
+    margin:10px 0 8px;
+    letter-spacing:-0.01em;
+  }
+  h1 .company{
+    background:var(--gradient);
+    background-size:300% 100%;
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+    animation:shift 6s ease-in-out infinite;
+  }
+  .sub{
+    color:var(--muted);
+    font-size:14.5px;
+    max-width:560px;
+    line-height:1.6;
+  }
+
+  .config-toggle{
+    margin-top:16px;
+    font-weight:500;
+    font-size:12px;
+    color:var(--text);
+    background:var(--panel);
+    backdrop-filter:blur(8px);
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:8px 14px;
+    cursor:pointer;
+    transition:all .2s ease;
+  }
+  .config-toggle:hover{ border-color:rgba(66,133,244,0.5); background:rgba(66,133,244,0.08); transform:translateY(-1px); }
+
+  .config-panel{
+    display:none;
+    margin-top:16px;
+    background:var(--panel);
+    backdrop-filter:blur(16px);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:18px 20px;
+    box-shadow:0 20px 40px -20px rgba(0,0,0,0.6);
+  }
+  .config-panel.open{ display:block; animation:fadeSlide .3s ease both; }
+  .config-row{ display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+  .config-row:last-child{ margin-bottom:0; }
+  .config-row label{
+    font-weight:600;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--muted);
+  }
+  .config-row input[type=text]{
+    background:rgba(255,255,255,0.04);
+    border:1px solid var(--line);
+    color:var(--text);
+    padding:9px 12px;
+    border-radius:8px;
+    font-family:'Inter';
+    font-size:13.5px;
+  }
+  .config-row input[type=text]:focus{ outline:none; border-color:var(--blue); box-shadow:0 0 0 3px rgba(66,133,244,0.18); }
+  .config-hint{ font-size:11.5px; color:var(--muted); margin-top:6px; }
+  .config-apply{
+    margin-top:4px;
+    background:var(--gradient);
+    background-size:300% 100%;
+    color:#fff;
+    border:none;
+    font-weight:600;
+    font-size:12.5px;
+    padding:9px 16px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .config-apply:hover{ transform:translateY(-1px); box-shadow:0 8px 20px -6px rgba(66,133,244,0.5); }
+
+  .filters{
+    max-width:920px;
+    margin:22px auto 0;
+    padding:0 20px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:20px;
+  }
+  .filter-group{ display:flex; flex-direction:column; gap:8px; }
+  .filter-group .fl-label{
+    font-weight:600;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--muted);
+  }
+  .pill-row{ display:flex; flex-wrap:wrap; gap:7px; }
+  .pill{
+    font-family:'Inter';
+    font-size:12.5px;
+    padding:7px 14px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:var(--panel);
+    backdrop-filter:blur(8px);
+    color:var(--muted);
+    cursor:pointer;
+    transition:all .18s ease;
+  }
+  .pill:hover{ border-color:rgba(255,255,255,0.25); color:var(--text); transform:translateY(-1px); }
+  .pill.active{
+    color:#fff;
+    font-weight:600;
+    border-color:transparent;
+    box-shadow:0 6px 16px -6px rgba(0,0,0,0.5);
+  }
+  .pill.active[data-dept="sales"]{ background:var(--sales); box-shadow:0 6px 18px -6px rgba(66,133,244,0.6); }
+  .pill.active[data-dept="marketing"]{ background:var(--marketing); box-shadow:0 6px 18px -6px rgba(234,67,53,0.6); }
+  .pill.active[data-dept="support"]{ background:var(--support); box-shadow:0 6px 18px -6px rgba(52,168,83,0.6); }
+  .pill.active[data-plain="1"]{ background:var(--gradient); background-size:300% 100%; animation:shift 6s ease-in-out infinite; }
+
+  @keyframes fadeSlide{
+    from{ opacity:0; transform:translateY(-6px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+
+  .results-meta{
+    max-width:920px;
+    margin:24px auto 10px;
+    padding:0 20px;
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    font-size:11.5px;
+    color:var(--muted);
+    border-bottom:1px solid var(--line);
+    padding-bottom:10px;
+  }
+  .results-meta .count b{ color:var(--text); }
+
+  .feed{
+    max-width:920px;
+    margin:0 auto;
+    padding:6px 20px 70px;
+  }
+  .card{
+    display:flex;
+    gap:20px;
+    padding:22px;
+    margin-bottom:14px;
+    background:var(--panel);
+    backdrop-filter:blur(14px);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:0 10px 30px -18px rgba(0,0,0,0.7);
+    opacity:0;
+    animation:cardIn .5s cubic-bezier(.2,.7,.3,1) forwards;
+    transition:transform .25s ease, border-color .25s ease, box-shadow .25s ease;
+  }
+  .card:hover{
+    transform:translateY(-3px);
+    border-color:rgba(255,255,255,0.18);
+    box-shadow:0 18px 40px -18px rgba(66,133,244,0.35);
+  }
+  @keyframes cardIn{
+    from{ opacity:0; transform:translateY(14px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+  .card .rail{
+    flex:0 0 92px;
+    font-size:11px;
+    color:var(--muted);
+    padding-top:2px;
+  }
+  .card .rail .date{ color:var(--text); font-weight:600; }
+  .card .rail .source{ margin-top:4px; }
+  .card .body{ flex:1; min-width:0; }
+  .card .top-line{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    margin-bottom:8px;
+    flex-wrap:wrap;
+  }
+  .tag{
+    font-weight:600;
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    padding:3px 10px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    color:var(--muted);
+    background:rgba(255,255,255,0.03);
+  }
+  .card h3{
+    font-size:17px;
+    font-weight:600;
+    margin:0 0 10px;
+    line-height:1.35;
+  }
+  .card h3 a{ color:var(--text); }
+  .card h3 a:hover{ color:var(--blue); text-decoration:none; }
+
+  .why{
+    background:rgba(255,255,255,0.03);
+    border-left:2px solid var(--support);
+    border-radius:0 10px 10px 0;
+    padding:12px 14px;
+    font-size:13px;
+    line-height:1.6;
+    color:#C6C7CE;
+  }
+  .why b{
+    display:block;
+    font-weight:600;
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:0.07em;
+    margin-bottom:5px;
+  }
+  .why.sales{ border-left-color:var(--sales); }
+  .why.sales b{ color:var(--sales); }
+  .why.marketing{ border-left-color:var(--marketing); }
+  .why.marketing b{ color:var(--marketing); }
+  .why.support{ border-left-color:var(--support); }
+  .why.support b{ color:var(--support); }
+
+  .card .src-link{
+    display:inline-block;
+    margin-top:10px;
+    font-size:11px;
+    color:var(--muted);
+    transition:color .15s ease;
+  }
+  .card .src-link:hover{ color:var(--blue); }
+
+  .empty{
+    text-align:center;
+    padding:60px 20px;
+    color:var(--muted);
+    font-size:13px;
+  }
+
+  footer{
+    max-width:920px;
+    margin:0 auto;
+    padding:0 20px 50px;
+    color:var(--muted);
+    font-size:12px;
+    line-height:1.6;
+  }
+  footer a{ color:var(--muted); text-decoration:underline; }
+
+  @media (max-width:640px){
+    .card{ flex-direction:column; gap:10px; }
+    .card .rail{ display:flex; gap:10px; align-items:baseline; }
+    h1{ font-size:30px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="brand-strip"></div>
+<div class="ticker-wrap">
+  <div class="status-inner"><span class="status-dot"></span><span id="tickerText">Loading latest coverage…</span></div>
+</div>
+
+<header>
+  <div class="eyebrow">Live feed · refreshes on every filter change</div>
+  <h1 id="pageTitle">Signal — <span class="company" id="companyName">Google</span> Intel Monitor</h1>
+  <p class="sub">One page, refreshed daily, for reps and marketers who don't have time to go looking for what a company did this week.</p>
+
+  <button class="config-toggle" id="configToggle">⚙ change company / topics</button>
+  <div class="config-panel" id="configPanel">
+    <div class="config-row">
+      <label for="companyInput">Company being monitored</label>
+      <input type="text" id="companyInput" value="Google" placeholder="e.g. Delta Air Lines">
+    </div>
+    <div class="config-row">
+      <label for="topicsInput">Focus topics (comma separated)</label>
+      <input type="text" id="topicsInput" value="Product Launches, Partnerships, Funding, Hiring, Regulation">
+      <div class="config-hint">Editing company here refetches live data. Topic labels are cosmetic — the backend classifies against a fixed keyword set in get-news.js; edit FOCUS_KEYWORDS there to change what each topic catches.</div>
+    </div>
+    <button class="config-apply" id="applyConfig">Apply</button>
+  </div>
+</header>
+
+<div class="filters">
+  <div class="filter-group">
+    <div class="fl-label">Focus</div>
+    <div class="pill-row" id="focusPills"></div>
+  </div>
+  <div class="filter-group">
+    <div class="fl-label">Window</div>
+    <div class="pill-row" id="windowPills">
+      <button class="pill active" data-plain="1" data-window="1">24 hours</button>
+      <button class="pill" data-window="7">7 days</button>
+      <button class="pill" data-window="30">30 days</button>
+    </div>
+  </div>
+  <div class="filter-group">
+    <div class="fl-label">Relevant to</div>
+    <div class="pill-row" id="deptPills">
+      <button class="pill active" data-dept="sales">Sales</button>
+      <button class="pill" data-dept="marketing">Marketing</button>
+      <button class="pill" data-dept="support">Customer Support</button>
+    </div>
+  </div>
+</div>
+
+<div class="results-meta">
+  <div class="count">Showing <b id="resultCount">0</b> items</div>
+  <div>sorted · most recent first</div>
+</div>
+
+<div class="feed" id="feed"></div>
+
+<footer>
+  Pulling live from Google News RSS for the configured company, via a Netlify Function. Focus is classified by keyword
+  match, Window filters by publish date, and the "why it matters" line is generated fresh per item (via Gemini) whenever
+  you change the Relevant-to department.
+</footer>
+
+<script>
+const TOPIC_KEYS = {
+  "Product Launches": "product",
+  "Partnerships": "partnerships",
+  "Funding": "funding",
+  "Hiring": "hiring",
+  "Regulation": "regulation"
+};
+
+let state = { focus: "all", window: 1, dept: "sales", company: "Google" };
+let currentItems = [];
+
+function buildFocusPills(){
+  const wrap = document.getElementById("focusPills");
+  wrap.innerHTML = "";
+  const allBtn = document.createElement("button");
+  allBtn.className = "pill active";
+  allBtn.dataset.plain = "1";
+  allBtn.textContent = "All";
+  allBtn.onclick = () => { state.focus = "all"; refreshFocusActive(); loadAndRender(); };
+  wrap.appendChild(allBtn);
+
+  Object.entries(TOPIC_KEYS).forEach(([label, key]) => {
+    const b = document.createElement("button");
+    b.className = "pill";
+    b.dataset.plain = "1";
+    b.dataset.focusKey = key;
+    b.textContent = label;
+    b.onclick = () => { state.focus = key; refreshFocusActive(); loadAndRender(); };
+    wrap.appendChild(b);
+  });
+}
+
+function refreshFocusActive(){
+  document.querySelectorAll("#focusPills .pill").forEach(p=>{
+    const isAll = !p.dataset.focusKey;
+    p.classList.toggle("active", state.focus === "all" ? isAll : p.dataset.focusKey === state.focus);
+  });
+}
+
+document.getElementById("windowPills").addEventListener("click", (e)=>{
+  const btn = e.target.closest(".pill");
+  if(!btn) return;
+  state.window = parseInt(btn.dataset.window, 10);
+  document.querySelectorAll("#windowPills .pill").forEach(p=>p.classList.remove("active"));
+  btn.classList.add("active");
+  loadAndRender();
+});
+
+document.getElementById("deptPills").addEventListener("click", (e)=>{
+  const btn = e.target.closest(".pill");
+  if(!btn) return;
+  state.dept = btn.dataset.dept;
+  document.querySelectorAll("#deptPills .pill").forEach(p=>p.classList.remove("active"));
+  btn.classList.add("active");
+  loadAndRender();
+});
+
+function fmtDate(dateStr){
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" });
+}
+
+function focusLabel(key){
+  return Object.keys(TOPIC_KEYS).find(k => TOPIC_KEYS[k] === key) || key;
+}
+
+async function loadAndRender(){
+  const feed = document.getElementById("feed");
+  feed.innerHTML = `<div class="empty">Pulling live coverage and writing relevance notes…</div>`;
+
+  const params = new URLSearchParams({
+    company: state.company,
+    focus: state.focus,
+    window: state.window,
+    dept: state.dept
+  });
+
+  try{
+    const res = await fetch(`/.netlify/functions/get-news?${params.toString()}`);
+    const data = await res.json();
+    if(data.error) throw new Error(data.error);
+
+    currentItems = data.items || [];
+    document.getElementById("resultCount").textContent = currentItems.length;
+
+    if(currentItems.length === 0){
+      feed.innerHTML = `<div class="empty">No items in this window. Try widening to 7 or 30 days, or clearing the Focus filter.</div>`;
+      return;
+    }
+
+    feed.innerHTML = currentItems.map((it, i) => `
+      <div class="card" style="animation-delay:${Math.min(i * 45, 500)}ms">
+        <div class="rail">
+          <div class="date">${fmtDate(it.date)}</div>
+          <div class="source">${it.source}</div>
+        </div>
+        <div class="body">
+          <div class="top-line"><span class="tag">${focusLabel(it.focus)}</span></div>
+          <h3><a href="${it.url}" target="_blank" rel="noopener">${it.title}</a></h3>
+          <div class="why ${state.dept}">
+            <b>Why it matters to ${state.dept === "support" ? "customer support" : state.dept}</b>
+            ${it.why}
+          </div>
+          <a class="src-link" href="${it.url}" target="_blank" rel="noopener">↗ source</a>
+        </div>
+      </div>
+    `).join("");
+
+    buildTicker();
+  }catch(err){
+    feed.innerHTML = `<div class="empty">Couldn't load the feed (${err.message}). If you're running this locally, make sure "netlify dev" is running, not a plain static server.</div>`;
+  }
+}
+
+function buildTicker(){
+  if(currentItems.length === 0){
+    document.getElementById("tickerText").textContent = "No items in the current filters.";
+    return;
+  }
+  const latest = currentItems[0];
+  document.getElementById("tickerText").textContent =
+    `Most recent: ${fmtDate(latest.date)} · ${latest.source} — ${latest.title}`;
+}
+
+document.getElementById("configToggle").onclick = () => {
+  document.getElementById("configPanel").classList.toggle("open");
+};
+document.getElementById("applyConfig").onclick = () => {
+  const name = document.getElementById("companyInput").value.trim() || "Google";
+  state.company = name;
+  document.getElementById("companyName").textContent = name;
+  document.getElementById("configPanel").classList.remove("open");
+  loadAndRender();
+};
+
+buildFocusPills();
+loadAndRender();
+</script>
+
+</body>
+</html>
