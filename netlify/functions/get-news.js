@@ -1,7 +1,7 @@
 const Parser = require('rss-parser');
 
 const parser = new Parser();
-const GEMINI_MODEL = 'gemini-2.5-flash';
+const GEMINI_MODEL = 'gemini-3.6-flash';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 // ---- build a Google News RSS search URL for any company ----
